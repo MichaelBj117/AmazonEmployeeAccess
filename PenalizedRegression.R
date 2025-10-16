@@ -66,4 +66,4 @@ kaggle_sub <- bind_cols(test_data$id, amazon_predictions[2]) %>%
   rename(id = ...1)
 
 vroom_write(kaggle_sub,
-            file="GitHub/AmazonEmployeeAccess/pen_logistical_reg.csv", delim=",")
+            file="GitHub/AmazonEmployeeAccess/pen_logistical_reg_batch.csv", delim=",")

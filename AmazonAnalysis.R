@@ -9,10 +9,10 @@ library(ggmosaic)
 library(embed)
 
 train_data <- vroom(
-  "GitHub/AmazonEmployeeAccess/amazon-employee-access-challenge/train.csv") %>% 
+  "GitHub/AmazonEmployeeAccess/train.csv") %>% 
   mutate(ACTION = factor(ACTION))
 test_data <- vroom(
-  "GitHub/AmazonEmployeeAccess/amazon-employee-access-challenge/test.csv")
+  "GitHub/AmazonEmployeeAccess/test.csv")
 plot1 <- ggplot(train_data, aes(
   x = RESOURCE, 
   y = ACTION)) +

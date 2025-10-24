@@ -6,6 +6,7 @@ library(glmnet)
 library(rpart)
 library(agua)
 library(embed)
+library(kknn)
 
 train_data <- vroom(
   "GitHub/AmazonEmployeeAccess/train.csv") %>% 
@@ -18,30 +19,27 @@ test_data <- vroom(
 amazon_recipe <- recipe(ACTION ~ ., data=train_data) %>%
   step_mutate_at(all_numeric_predictors() , fn = factor) %>% # turn all numeric features into factors
   step_other(all_factor_predictors(), threshold = .001) %>% # combines categorical values that occur <.1% i
-  step_lencode_mixed(all_factor_predictors(), outcome = vars(ACTION)) 
+  step_lencode_mixed(all_factor_predictors(), outcome = vars(ACTION)) %>% 
   step_normalize(all_predictors())
 
 prepped_recipe <- prep(amazon_recipe)
 baked_data <- bake(prepped_recipe, new_data=train_data)
 ncol(baked_data)
 
-forest_mod <- rand_forest(mtry = tune(),
-                          min_n=tune(),
-                          trees=1000) %>%
-  set_engine("ranger") %>%
-  set_mode("classification")
+knn_model <- nearest_neighbor(neighbors=tune()) %>% # tune
+  set_mode("classification") %>%
+  set_engine("kknn")
 
-forest_workflow <- workflow() %>% 
+knn_workflow <- workflow() %>% 
   add_recipe(amazon_recipe) %>%
-  add_model(forest_mod) 
+  add_model(knn_model) 
 
-tuning_grid <- grid_regular(mtry(range(c(1,9))),
-                            min_n(),
+tuning_grid <- grid_regular(neighbors(),
                             levels = 5) ## L^2 total tuning possibilities
 
 folds <- vfold_cv(train_data, v = 5, repeats=1)
 
-CV_results <- forest_workflow %>%
+CV_results <- knn_workflow %>%
   tune_grid(resamples=folds,
             grid=tuning_grid,
             metrics=metric_set(roc_auc)) #Or leave metrics NULL
@@ -49,7 +47,7 @@ CV_results <- forest_workflow %>%
 bestTune <- CV_results %>%
   select_best(metric = "roc_auc")
 
-final_workflow <- forest_workflow %>%
+final_workflow <- knn_workflow %>%
   finalize_workflow(bestTune) %>%
   fit(data=train_data)
 
